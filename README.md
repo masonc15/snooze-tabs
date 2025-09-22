@@ -1,5 +1,7 @@
 # Tab Snoozer
 
+**This is a Firefox port of the Tab Snoozer extension with full compatibility for Firefox 109+.**
+
 Tab Snoozer is a Chrome extension that helps you manage your browser tabs by allowing you to "snooze" them for a set period. Once snoozed, the tab will close and reopen automatically at the specified time.
 
 ## Features
