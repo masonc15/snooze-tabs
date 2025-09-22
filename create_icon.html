@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Icon</title>
+</head>
+<body>
+    <canvas id="canvas" width="128" height="128"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#4CAF50';
+        ctx.fillRect(0, 0, 128, 128);
+
+        // Clock circle
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(64, 64, 40, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Clock hands
+        ctx.lineCap = 'round';
+
+        // Hour hand
+        ctx.beginPath();
+        ctx.moveTo(64, 64);
+        ctx.lineTo(64, 40);
+        ctx.stroke();
+
+        // Minute hand
+        ctx.beginPath();
+        ctx.moveTo(64, 64);
+        ctx.lineTo(85, 45);
+        ctx.stroke();
+
+        // Center dot
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(64, 64, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Zzz for snooze
+        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText('Zzz', 78, 95);
+
+        // Convert to data URL and log it
+        console.log('Right-click canvas and save as icon.png');
+        console.log('Or use this data URL:', canvas.toDataURL('image/png'));
+    </script>
+    <p>Right-click the canvas above and save as icon.png</p>
+</body>
+</html>
