@@ -1,3 +1,8 @@
+// Browser compatibility layer - don't redeclare if browser already exists
+if (typeof browser === 'undefined') {
+  var browser = chrome;
+}
+
 const snoozeListDiv = document.getElementById("snooze-list");
 const customModal = document.getElementById("customModal");
 const recurringModal = document.getElementById("recurringModal");
@@ -150,7 +155,7 @@ async function handleRecurringSnooze() {
   }
 
   const [hours, minutes] = timeInput.value.split(":").map(Number);
-  const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [currentTab] = await browser.tabs.query({ active: true, currentWindow: true });
   
   if (!currentTab || !currentTab.url) {
     alert("No active tab found to snooze.");
@@ -166,14 +171,14 @@ async function handleRecurringSnooze() {
   };
 
   const configId = `recurring-${Date.now()}`;
-  await chrome.storage.local.set({
+  await browser.storage.local.set({
     [configId]: recurringConfig
   });
 
   const nextTime = getNextOccurrence(hours, minutes, selectedDays);
   const alarmName = `snooze-${currentTab.id}-${nextTime.getTime()}`;
   
-  await chrome.storage.local.set({
+  await browser.storage.local.set({
     [alarmName]: {
       url: currentTab.url,
       snoozeTime: nextTime.getTime(),
@@ -182,8 +187,8 @@ async function handleRecurringSnooze() {
     }
   });
 
-  chrome.alarms.create(alarmName, { when: nextTime.getTime() });
-  chrome.tabs.remove(currentTab.id);
+  browser.alarms.create(alarmName, { when: nextTime.getTime() });
+  browser.tabs.remove(currentTab.id);
 
   recurringModal.style.display = "none";
   alert("Recurring snooze set successfully!");
@@ -230,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
 setInterval(updateSnoozeGrid, 60000);
 
 async function snoozeTab(hours) {
-  const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [currentTab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (!currentTab || !currentTab.url) {
     alert("No active tab found to snooze.");
     return;
@@ -240,21 +245,21 @@ async function snoozeTab(hours) {
   const alarmName = `snooze-${currentTab.id}-${snoozeTime}`;
 
   // Save tab details in local storage
-  await chrome.storage.local.set({
+  await browser.storage.local.set({
     [alarmName]: { url: currentTab.url, snoozeTime, title: currentTab.title },
   });
 
   // Create an alarm
-  chrome.alarms.create(alarmName, { when: snoozeTime });
+  browser.alarms.create(alarmName, { when: snoozeTime });
 
   // Close the current tab
-  chrome.tabs.remove(currentTab.id);
+  browser.tabs.remove(currentTab.id);
 
   alert(`Tab snoozed for ${hours} hours.`);
 }
 
 async function removeSnooze(alarmName) {
-  const item = await chrome.storage.local.get(alarmName);
+  const item = await browser.storage.local.get(alarmName);
   const removeModal = document.getElementById("removeModal");
   const removeRecurringModal = document.getElementById("removeRecurringModal");
   
@@ -273,16 +278,16 @@ async function removeSnooze(alarmName) {
         }
 
         // First clear the alarm and remove storage entries
-        await chrome.alarms.clear(alarmName);
-        await chrome.storage.local.remove(alarmName);
+        await browser.alarms.clear(alarmName);
+        await browser.storage.local.remove(alarmName);
 
         if (action === 'removeAll' || action === 'removeAllAndOpen') {
-          await chrome.storage.local.remove(item[alarmName].recurringId);
+          await browser.storage.local.remove(item[alarmName].recurringId);
         }
 
         // Then open the tab if requested
         if (action === 'removeAllAndOpen' || action === 'removeSingleAndOpen') {
-          await chrome.tabs.create({ url: item[alarmName].url });
+          await browser.tabs.create({ url: item[alarmName].url });
         }
         
         listSnoozed();
@@ -309,12 +314,12 @@ async function removeSnooze(alarmName) {
         }
 
         // First clear the alarm and remove storage entry
-        await chrome.alarms.clear(alarmName);
-        await chrome.storage.local.remove(alarmName);
+        await browser.alarms.clear(alarmName);
+        await browser.storage.local.remove(alarmName);
 
         // Then open the tab if requested
         if (action === 'removeAndOpen') {
-          await chrome.tabs.create({ url: item[alarmName].url });
+          await browser.tabs.create({ url: item[alarmName].url });
         }
         
         listSnoozed();
@@ -332,7 +337,7 @@ function listSnoozed() {
   // first clear the list
   snoozeListDiv.innerHTML = "";
 
-  chrome.storage.local.get(null, (items) => {
+  browser.storage.local.get(null, (items) => {
     // Create tabs container
     const tabsContainer = document.createElement("div");
     tabsContainer.className = "tabs-container";
@@ -349,16 +354,29 @@ function listSnoozed() {
     // Create tab buttons
     const tabButtons = document.createElement("div");
     tabButtons.className = "tab-buttons";
-    tabButtons.innerHTML = `
-      <button class="tab-button active" data-tab="regular">
-        One-time
-        <span class="count">${regularSnoozes.length}</span>
-      </button>
-      <button class="tab-button" data-tab="recurring">
-        Recurring
-        <span class="count">${recurringSnoozes.length}</span>
-      </button>
-    `;
+
+    // Create regular tab button
+    const regularBtn = document.createElement("button");
+    regularBtn.className = "tab-button active";
+    regularBtn.dataset.tab = "regular";
+    regularBtn.textContent = "One-time ";
+    const regularCount = document.createElement("span");
+    regularCount.className = "count";
+    regularCount.textContent = regularSnoozes.length;
+    regularBtn.appendChild(regularCount);
+
+    // Create recurring tab button
+    const recurringBtn = document.createElement("button");
+    recurringBtn.className = "tab-button";
+    recurringBtn.dataset.tab = "recurring";
+    recurringBtn.textContent = "Recurring ";
+    const recurringCount = document.createElement("span");
+    recurringCount.className = "count";
+    recurringCount.textContent = recurringSnoozes.length;
+    recurringBtn.appendChild(recurringCount);
+
+    tabButtons.appendChild(regularBtn);
+    tabButtons.appendChild(recurringBtn);
     tabsContainer.appendChild(tabButtons);
 
     // Create tab content containers
@@ -416,17 +434,31 @@ function listSnoozed() {
 
       const recurringIndicator = recurringId ? "🔄 " : "";
       const data = title || url;
-      
-      listItem.innerHTML = `
-        <span title="${data}" class="tab-info">
-          <div class="tab-title">${recurringIndicator}${data}</div>
-          <div class="tab-time">${snoozeTimeStr}</div>
-        </span>
-      `;
+
+      // Create tab info span
+      const tabInfo = document.createElement("span");
+      tabInfo.title = data;
+      tabInfo.className = "tab-info";
+
+      // Create tab title div
+      const tabTitle = document.createElement("div");
+      tabTitle.className = "tab-title";
+      tabTitle.textContent = recurringIndicator + data;
+
+      // Create tab time div
+      const tabTime = document.createElement("div");
+      tabTime.className = "tab-time";
+      tabTime.textContent = snoozeTimeStr;
+
+      tabInfo.appendChild(tabTitle);
+      tabInfo.appendChild(tabTime);
+      listItem.appendChild(tabInfo);
 
       const removeButton = document.createElement("button");
       removeButton.className = "remove-btn";
-      removeButton.innerHTML = '<span class="close-icon"></span>';
+      const closeIcon = document.createElement("span");
+      closeIcon.className = "close-icon";
+      removeButton.appendChild(closeIcon);
       removeButton.title = "Remove snooze"; // Add tooltip
       removeButton.addEventListener("click", () => removeSnooze(key));
       listItem.appendChild(removeButton);
